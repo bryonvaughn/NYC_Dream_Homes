@@ -18,6 +18,7 @@ CREATE TABLE agent_roles (
     role_type varchar(20) NOT NULL CHECK (role_type IN ('agent','vip'))
 );
 
+
 -- Property Types Table
 CREATE TABLE Property_Types (
     Type_ID SERIAL PRIMARY KEY,
