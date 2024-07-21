@@ -12,9 +12,10 @@ GRANT data_manager TO admin;
 -- Supporting Tables
 
 -- Agent Roles Table
-CREATE TABLE Agent_Roles (
-    Role_ID SERIAL PRIMARY KEY,
-    Description TEXT NOT NULL
+CREATE TABLE agent_roles (
+    role_id SERIAL PRIMARY KEY,
+    description TEXT NOT NULL,
+    role_type varchar(20) NOT NULL CHECK (role_type IN ('agent','vip'))
 );
 
 -- Property Types Table
