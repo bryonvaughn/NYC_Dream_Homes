@@ -9,133 +9,178 @@ GRANT read_only TO data_entry;
 GRANT data_entry TO data_manager;
 GRANT data_manager TO admin;
 
--- Supporting Tables
-
 -- Agent Roles Table
 CREATE TABLE agent_roles (
     role_id SERIAL PRIMARY KEY,
+    role_name VARCHAR(20) NOT NULL,
     description TEXT NOT NULL,
-    role_type varchar(20) NOT NULL CHECK (role_type IN ('agent','vip'))
+    access_level VARCHAR(20) NOT NULL,
+    creation_date DATE DEFAULT CURRENT_DATE,
+    is_active BOOLEAN DEFAULT TRUE,
+    CONSTRAINT chk_access_level CHECK (access_level IN ('Read_Only', 'Data_Entry', 'Data_Manager', 'Admin')),
+    CONSTRAINT chk_role_name CHECK (role_name IN ('Manager', 'Intern', 'Executive', 'Supervisor'))
 );
 
-
 -- Property Types Table
-CREATE TABLE Property_Types (
-    Type_ID SERIAL PRIMARY KEY,
-    Description TEXT NOT NULL
+CREATE TABLE property_types (
+    type_id SERIAL PRIMARY KEY,
+    type_name VARCHAR(20) NOT NULL,
+    CONSTRAINT chk_type_name CHECK (type_name IN ('Apartment', 'Townhouse', 'Condo', 'Villa', 'Studio'))
 );
 
 -- Property Status Table
-CREATE TABLE Property_Status (
-    Status_ID SERIAL PRIMARY KEY,
-    Status_Description TEXT NOT NULL
+CREATE TABLE property_status (
+    status_id SERIAL PRIMARY KEY,
+    status_name VARCHAR(20) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    CONSTRAINT chk_status_name CHECK (status_name IN ('Pending', 'Reserved', 'Sold', 'Listed', 'Unavailable'))
 );
 
 -- Client Types Table
-CREATE TABLE Client_Types (
-    Client_Type_ID SERIAL PRIMARY KEY,
-    Type_Description TEXT NOT NULL
+CREATE TABLE client_types (
+    client_type_id SERIAL PRIMARY KEY,
+    type_name VARCHAR(20) NOT NULL,
+    type_description VARCHAR(200) NOT NULL,
+    CONSTRAINT chk_type_name CHECK (type_name IN ('Corporate', 'Individual', 'Non-Profit', 'Government', 'Small Business', 'VIP'))
 );
 
 -- Event Types Table
-CREATE TABLE Event_Types (
-    Type_ID SERIAL PRIMARY KEY,
-    Description TEXT NOT NULL
+CREATE TABLE event_types (
+    type_id SERIAL PRIMARY KEY,
+    type_name VARCHAR(20) NOT NULL,
+    CONSTRAINT chk_type_name CHECK (type_name IN ('Room Tour', 'Corporate Party', 'Networking Event', 'Open House'))
 );
 
 -- Transaction Types Table
-CREATE TABLE Transaction_Types (
-    Type_ID SERIAL PRIMARY KEY,
-    Description TEXT NOT NULL
+CREATE TABLE transaction_types (
+    type_id SERIAL PRIMARY KEY,
+    type_name VARCHAR(20) NOT NULL,
+    CONSTRAINT chk_type_name CHECK (type_name IN ('Deposit', 'Withdrawal', 'Transfer', 'Payment', 'Refund', 'Charge'))
+);
+
+-- Addresses Table
+CREATE TABLE addresses (
+    address_id SERIAL PRIMARY KEY,
+    address VARCHAR(100) NOT NULL,
+    city VARCHAR(50) NOT NULL,
+    state VARCHAR(50) NOT NULL,
+    zipcode VARCHAR(15) NOT NULL
 );
 
 -- Employees Table
-CREATE TABLE Employees (
-    Employee_ID SERIAL PRIMARY KEY,
-    Name TEXT NOT NULL,
-    Role_ID INT REFERENCES Agent_Roles(Role_ID),
-    Office_ID INT,  -- This will be updated to a FK after Offices table creation
-    Employment_Status TEXT NOT NULL,
-    Performance_Metrics TEXT
+CREATE TABLE employees (
+    employee_id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    email VARCHAR(50) NOT NULL,
+    phone_number VARCHAR(20),
+    address_id INT REFERENCES addresses(address_id),
+    role_id INT REFERENCES agent_roles(role_id),
+    office_id INT, 
+    employment_status VARCHAR(20) NOT NULL,
+    sales_total NUMERIC(15, 2) DEFAULT 0.00,
+    CONSTRAINT chk_employment_status CHECK (employment_status IN ('Active', 'Inactive', 'On Leave', 'Terminated'))
 );
 
 -- Offices Table
-CREATE TABLE Offices (
-    Office_ID SERIAL PRIMARY KEY,
-    Address TEXT NOT NULL,
-    Contact_Info TEXT NOT NULL,
-    Manager_ID INT REFERENCES Employees(Employee_ID)
+CREATE TABLE offices (
+    office_id SERIAL PRIMARY KEY,
+    office_name VARCHAR(100) NOT NULL,
+    address_id INT REFERENCES addresses(address_id),
+    phone_number VARCHAR(20),
+    email VARCHAR(100),
+    manager_id INT REFERENCES employees(employee_id)
 );
 
--- Now adding foreign key constraint to Employees for Office_ID
-ALTER TABLE Employees ADD CONSTRAINT fk_office_id FOREIGN KEY (Office_ID) REFERENCES Offices(Office_ID);
-
 -- Properties Table
-CREATE TABLE Properties (
-    Property_ID SERIAL PRIMARY KEY,
-    Address TEXT NOT NULL,
-    Type_ID INT REFERENCES Property_Types(Type_ID),
-    Price NUMERIC(10, 4) NOT NULL,
-    Status_ID INT REFERENCES Property_Status(Status_ID)
+CREATE TABLE properties (
+    property_id SERIAL PRIMARY KEY,
+    address_id INT REFERENCES addresses(address_id),
+    type_id INT REFERENCES property_types(type_id),
+    price NUMERIC(10, 4) NOT NULL,
+    status_id INT REFERENCES property_status(status_id),
+    square_feet INT,
+    number_of_bedrooms INT,
+    number_of_bathrooms INT,
+    year_built INT
 );
 
 -- Clients Table
-CREATE TABLE Clients (
-    Client_ID SERIAL PRIMARY KEY,
-    Name TEXT NOT NULL,
-    Contact_Info TEXT NOT NULL,
-    Preferences TEXT,
-    Client_Type_ID INT REFERENCES Client_Types(Client_Type_ID)
+CREATE TABLE clients (
+    client_id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    email VARCHAR(50),
+    phone_number VARCHAR(20),
+    address_id INT REFERENCES addresses(address_id),
+    client_type_id INT REFERENCES client_types(client_type_id)
 );
 
 -- Transactions Table
-CREATE TABLE Transactions (
-    Transaction_ID SERIAL PRIMARY KEY,
-    Property_ID INT REFERENCES Properties(Property_ID),
-    Client_ID INT REFERENCES Clients(Client_ID),
-    Agent_ID INT REFERENCES Employees(Employee_ID),
-    Date DATE NOT NULL,
-    Transaction_Type_ID INT REFERENCES Transaction_Types(Type_ID),
-    Price NUMERIC(10, 4),
-    Commission NUMERIC(10, 4)
+CREATE TABLE transactions (
+    transaction_id SERIAL PRIMARY KEY,
+    property_id INT REFERENCES properties(property_id),
+    client_id INT REFERENCES clients(client_id),
+    agent_id INT REFERENCES employees(employee_id),
+    date DATE NOT NULL,
+    transaction_type_id INT REFERENCES transaction_types(type_id),
+    price NUMERIC(10, 4),
+    commission NUMERIC(10, 4)
 );
 
 -- Events Table
-CREATE TABLE Events (
-    Event_ID SERIAL PRIMARY KEY,
-    Type_ID INT REFERENCES Event_Types(Type_ID),
-    Date DATE NOT NULL,
-    Property_ID INT REFERENCES Properties(Property_ID),
-    Agent_ID INT REFERENCES Employees(Employee_ID),
-    Client_Attendance TEXT
-);
-
--- Office Equipments Table
-CREATE TABLE Office_Equipments (
-    Equipment_ID SERIAL PRIMARY KEY,
-    Office_ID INT REFERENCES Offices(Office_ID),
-    Description TEXT NOT NULL,
-    Status TEXT NOT NULL
+CREATE TABLE events (
+    event_id SERIAL PRIMARY KEY,
+    type_id INT REFERENCES event_types(type_id),
+    date DATE NOT NULL,
+    property_id INT REFERENCES properties(property_id),
+    agent_id INT REFERENCES employees(employee_id),
+    participant_number INT,
+    host VARCHAR(50),
+    client_attendance TEXT
 );
 
 -- Maintenance Records Table
-CREATE TABLE Maintenance_Records (
-    Maintenance_ID SERIAL PRIMARY KEY,
-    Equipment_ID INT REFERENCES Office_Equipments(Equipment_ID),
-    Date DATE NOT NULL,
-    Description TEXT NOT NULL,
-    Cost NUMERIC(10, 4)
+CREATE TABLE maintenance_records (
+    maintenance_id SERIAL PRIMARY KEY,
+    date DATE NOT NULL,
+    description TEXT NOT NULL,
+    cost NUMERIC(10, 4),
+    responsible_person VARCHAR(30),
+    status VARCHAR(20) CHECK (status IN ('Scheduled', 'In Progress', 'Completed', 'Cancelled'))
 );
 
 -- Property Sales History Table
-CREATE TABLE Property_Sales_History (
-    Sale_ID SERIAL PRIMARY KEY,
-    Property_ID INT REFERENCES Properties(Property_ID),
-    Sale_Date DATE NOT NULL,
-    Price NUMERIC(10, 4),
-    Buyer_ID INT REFERENCES Clients(Client_ID),
-    Seller_ID INT REFERENCES Clients(Client_ID)
+CREATE TABLE property_sales_history (
+    sale_id SERIAL PRIMARY KEY,
+    property_id INT REFERENCES properties(property_id),
+    sale_date DATE NOT NULL,
+    price NUMERIC(10, 4),
+    buyer_id INT REFERENCES clients(client_id),
+    seller_id INT REFERENCES clients(client_id),
+    agent_id INT REFERENCES employees(employee_id)
 );
+
+-- Payments Table
+CREATE TABLE payments (
+    payment_id SERIAL PRIMARY KEY,
+    transaction_id INT REFERENCES transactions(transaction_id),
+    payment_date DATE NOT NULL,
+    amount NUMERIC(10, 4) NOT NULL,
+    payment_method VARCHAR(20) CHECK (payment_method IN ('Credit Card', 'Bank Transfer', 'Cash', 'Check')),
+    status VARCHAR(20) CHECK (status IN ('Pending', 'Completed', 'Failed'))
+);
+
+-- Leases Table
+CREATE TABLE leases (
+    lease_id SERIAL PRIMARY KEY,
+    property_id INT REFERENCES properties(property_id),
+    client_id INT REFERENCES clients(client_id),
+    agent_id INT REFERENCES employees(employee_id),
+    lease_start_date DATE NOT NULL,
+    lease_end_date DATE NOT NULL,
+    monthly_rent NUMERIC(10, 4) NOT NULL,
+    deposit_amount NUMERIC(10, 4)
+);
+
 
 -- Setting up row-level security and policies for sensitive tables
 ALTER TABLE Offices ENABLE ROW LEVEL SECURITY;
