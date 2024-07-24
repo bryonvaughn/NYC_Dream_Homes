@@ -110,6 +110,7 @@ CREATE TABLE clients (
     name VARCHAR(50) NOT NULL,
     email VARCHAR(50),
     phone_number VARCHAR(20),
+    date_of_birth DATE,
     address_id INT REFERENCES addresses(address_id),
     client_type_id INT REFERENCES client_types(client_type_id)
 );
@@ -123,7 +124,8 @@ CREATE TABLE transactions (
     date DATE NOT NULL,
     transaction_type_id INT REFERENCES transaction_types(type_id),
     price NUMERIC(10, 4),
-    commission NUMERIC(10, 4)
+    commission NUMERIC(10, 4),
+    payment_status VARCHAR(20) CHECK (payment_status IN ('Pending', 'Completed', 'Failed'))
 );
 
 -- events Table
@@ -136,16 +138,6 @@ CREATE TABLE events (
     participant_number INT,
     host VARCHAR(50),
     client_attendance TEXT
-);
-
--- Maintenance Records Table
-CREATE TABLE maintenance_records (
-    maintenance_id SERIAL PRIMARY KEY,
-    date DATE NOT NULL,
-    description TEXT NOT NULL,
-    cost NUMERIC(10, 4),
-    responsible_person VARCHAR(30),
-    status VARCHAR(20) CHECK (status IN ('Scheduled', 'In Progress', 'Completed', 'Cancelled'))
 );
 
 -- Property Sales History Table
