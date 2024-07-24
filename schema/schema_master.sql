@@ -67,7 +67,7 @@ CREATE TABLE addresses (
     zipcode VARCHAR(15) NOT NULL
 );
 
--- Employees Table
+-- employees Table
 CREATE TABLE employees (
     employee_id SERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
@@ -81,7 +81,7 @@ CREATE TABLE employees (
     CONSTRAINT chk_employment_status CHECK (employment_status IN ('Active', 'Inactive', 'On Leave', 'Terminated'))
 );
 
--- Offices Table
+-- offices table
 CREATE TABLE offices (
     office_id SERIAL PRIMARY KEY,
     office_name VARCHAR(100) NOT NULL,
@@ -91,7 +91,7 @@ CREATE TABLE offices (
     manager_id INT REFERENCES employees(employee_id)
 );
 
--- Properties Table
+-- properties table
 CREATE TABLE properties (
     property_id SERIAL PRIMARY KEY,
     address_id INT REFERENCES addresses(address_id),
@@ -104,7 +104,7 @@ CREATE TABLE properties (
     year_built INT
 );
 
--- Clients Table
+-- clients Table
 CREATE TABLE clients (
     client_id SERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
@@ -114,7 +114,7 @@ CREATE TABLE clients (
     client_type_id INT REFERENCES client_types(client_type_id)
 );
 
--- Transactions Table
+-- transactions Table
 CREATE TABLE transactions (
     transaction_id SERIAL PRIMARY KEY,
     property_id INT REFERENCES properties(property_id),
@@ -126,7 +126,7 @@ CREATE TABLE transactions (
     commission NUMERIC(10, 4)
 );
 
--- Events Table
+-- events Table
 CREATE TABLE events (
     event_id SERIAL PRIMARY KEY,
     type_id INT REFERENCES event_types(type_id),
@@ -183,11 +183,11 @@ CREATE TABLE leases (
 
 
 -- Setting up row-level security and policies for sensitive tables
-ALTER TABLE Offices ENABLE ROW LEVEL SECURITY;
-CREATE POLICY office_access ON Offices FOR SELECT USING (true);
+ALTER TABLE offices ENABLE ROW LEVEL SECURITY;
+CREATE POLICY office_access ON offices FOR SELECT USING (true);
 
-ALTER TABLE Employees ENABLE ROW LEVEL SECURITY;
-CREATE POLICY employee_access ON Employees FOR SELECT USING (true);
+ALTER TABLE employees ENABLE ROW LEVEL SECURITY;
+CREATE POLICY employee_access ON employees FOR SELECT USING (true);
 
 -- Granting table-level privileges
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO read_only;
