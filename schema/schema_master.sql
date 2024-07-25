@@ -79,6 +79,8 @@ CREATE TABLE employees (
     office_id INT, 
     employment_status VARCHAR(20) NOT NULL,
     sales_total NUMERIC(15, 2) DEFAULT 0.00,
+    hire_date DATE,
+    termination_date DATE,
     CONSTRAINT chk_employment_status CHECK (employment_status IN ('Active', 'Inactive', 'On Leave', 'Terminated'))
 );
 
@@ -112,7 +114,11 @@ CREATE TABLE properties (
     square_feet INT,
     number_of_bedrooms INT,
     number_of_bathrooms INT,
-    year_built INT
+    year_built INT,
+    description TEXT,
+    amenities TEXT,
+    listing_date DATE,
+    listing_agent_id INT REFERENCES employees(employee_id)
 );
 
 -- property_images table
@@ -143,6 +149,8 @@ CREATE TABLE clients (
     email VARCHAR(50),
     phone_number VARCHAR(20),
     date_of_birth DATE,
+    preferred_contact_method VARCHAR(20),
+    notes TEXT,
     address_id INT REFERENCES addresses(address_id),
     client_type_id INT REFERENCES client_types(client_type_id)
 );
@@ -158,7 +166,7 @@ CREATE TABLE property_reviews (
     review_text TEXT
 );
 
--- client_interactions
+-- client_interactions table
 CREATE TABLE client_interactions (
     interaction_id SERIAL PRIMARY KEY,
     client_id INT REFERENCES clients(client_id),
@@ -168,7 +176,7 @@ CREATE TABLE client_interactions (
     notes TEXT
 );
 
--- transactions Table
+-- transactions table
 CREATE TABLE transactions (
     transaction_id SERIAL PRIMARY KEY,
     property_id INT REFERENCES properties(property_id),
@@ -178,10 +186,12 @@ CREATE TABLE transactions (
     transaction_type_id INT REFERENCES transaction_types(type_id),
     price NUMERIC(10, 4),
     commission NUMERIC(10, 4),
-    payment_status VARCHAR(20) CHECK (payment_status IN ('Pending', 'Completed', 'Failed'))
+    payment_status VARCHAR(20) CHECK (payment_status IN ('Pending', 'Completed', 'Failed')),
+    contract_signed_date DATE,
+    closing_date DATE
 );
 
--- events Table
+-- events table
 CREATE TABLE events (
     event_id SERIAL PRIMARY KEY,
     type_id INT REFERENCES event_types(type_id),
@@ -190,10 +200,12 @@ CREATE TABLE events (
     agent_id INT REFERENCES employees(employee_id),
     participant_number INT,
     host VARCHAR(50),
-    client_attendance TEXT
+    client_attendance TEXT,
+    duration INT,
+    location VARCHAR(100)
 );
 
--- Property Sales History Table
+-- property_sales_history table
 CREATE TABLE property_sales_history (
     sale_id SERIAL PRIMARY KEY,
     property_id INT REFERENCES properties(property_id),
@@ -223,7 +235,8 @@ CREATE TABLE leases (
     lease_start_date DATE NOT NULL,
     lease_end_date DATE NOT NULL,
     monthly_rent NUMERIC(10, 4) NOT NULL,
-    deposit_amount NUMERIC(10, 4)
+    deposit_amount NUMERIC(10, 4),
+    lease_status VARCHAR(20)
 );
 
 
