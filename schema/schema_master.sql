@@ -9,15 +9,16 @@ GRANT read_only TO data_entry;
 GRANT data_entry TO data_manager;
 GRANT data_manager TO admin;
 
--- Agent Roles Table
-CREATE TABLE agent_roles (
+-- user_roles table
+-- this is the table to determine what access should be granted based on roles
+CREATE TABLE user_roles (
     role_id SERIAL PRIMARY KEY,
     role_name VARCHAR(20) NOT NULL,
     description TEXT NOT NULL,
     access_level VARCHAR(20) NOT NULL,
     creation_date DATE DEFAULT CURRENT_DATE,
     is_active BOOLEAN DEFAULT TRUE,
-    CONSTRAINT chk_access_level CHECK (access_level IN ('Read_Only', 'Data_Entry', 'Data_Manager', 'Admin')),
+    CONSTRAINT chk_access_level CHECK (access_level IN ('read_only', 'data_entry', 'data_manager', 'admin')),
     CONSTRAINT chk_role_name CHECK (role_name IN ('Manager', 'Intern', 'Executive', 'Supervisor'))
 );
 
@@ -81,6 +82,16 @@ CREATE TABLE employees (
     CONSTRAINT chk_employment_status CHECK (employment_status IN ('Active', 'Inactive', 'On Leave', 'Terminated'))
 );
 
+-- agents table
+-- this will be helpful to separate admin staff from agents that represent properties
+CREATE TABLE agents (
+    agent_id SERIAL PRIMARY KEY,
+    employee_id INT REFERENCES employees(employee_id),
+    license_number VARCHAR(50) NOT NULL,
+    specialties TEXT,
+    rating NUMERIC(3, 2) DEFAULT 0.00
+);
+
 -- offices table
 CREATE TABLE offices (
     office_id SERIAL PRIMARY KEY,
@@ -104,7 +115,28 @@ CREATE TABLE properties (
     year_built INT
 );
 
--- clients Table
+-- property_images table
+-- this table will be used to manage all images of the property to be displayed
+CREATE TABLE property_images (
+    image_id SERIAL PRIMARY KEY,
+    property_id INT REFERENCES properties(property_id),
+    image_url VARCHAR(255) NOT NULL,
+    description TEXT,
+    uploaded_date DATE DEFAULT CURRENT_DATE
+);
+
+-- property_visits table
+-- this table will be used to track history of visits of potential clients
+CREATE TABLE property_visits (
+    visit_id SERIAL PRIMARY KEY,
+    property_id INT REFERENCES properties(property_id),
+    client_id INT REFERENCES clients(client_id),
+    visit_date DATE NOT NULL,
+    agent_id INT REFERENCES employees(employee_id),
+    feedback TEXT
+);
+
+-- clients table
 CREATE TABLE clients (
     client_id SERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
@@ -113,6 +145,27 @@ CREATE TABLE clients (
     date_of_birth DATE,
     address_id INT REFERENCES addresses(address_id),
     client_type_id INT REFERENCES client_types(client_type_id)
+);
+
+-- property_reviews table
+-- this table will be used to store reviews and ratings by clients for properties
+CREATE TABLE property_reviews (
+    review_id SERIAL PRIMARY KEY,
+    property_id INT REFERENCES properties(property_id),
+    client_id INT REFERENCES clients(client_id),
+    review_date DATE NOT NULL,
+    rating INT CHECK (rating >= 1 AND rating <= 5),
+    review_text TEXT
+);
+
+-- client_interactions
+CREATE TABLE client_interactions (
+    interaction_id SERIAL PRIMARY KEY,
+    client_id INT REFERENCES clients(client_id),
+    employee_id INT REFERENCES employees(employee_id),
+    interaction_date DATE NOT NULL,
+    interaction_type VARCHAR(50) NOT NULL,
+    notes TEXT
 );
 
 -- transactions Table
