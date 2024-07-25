@@ -1,28 +1,3 @@
--- TODO: BEGIN - Consider removing all security requirements as beyond the scope of the project
-    -- Creating roles for different levels of database access
-    CREATE ROLE read_only NOLOGIN;
-    CREATE ROLE data_entry NOLOGIN;
-    CREATE ROLE data_manager NOLOGIN;
-    CREATE ROLE admin SUPERUSER;
-
-    -- Granting role usage
-    GRANT read_only TO data_entry;
-    GRANT data_entry TO data_manager;
-    GRANT data_manager TO admin;
-
-    -- user_roles table
-    -- this is the table to determine what access should be granted based on roles
-    CREATE TABLE user_roles (
-        role_id SERIAL PRIMARY KEY,
-        role_name VARCHAR(20) NOT NULL,
-        description TEXT NOT NULL,
-        access_level VARCHAR(20) NOT NULL,
-        creation_date DATE DEFAULT CURRENT_DATE,
-        is_active BOOLEAN DEFAULT TRUE,
-        CONSTRAINT chk_access_level CHECK (access_level IN ('read_only', 'data_entry', 'data_manager', 'admin')),
-        CONSTRAINT chk_role_name CHECK (role_name IN ('Manager', 'Intern', 'Executive', 'Supervisor'))
-    );
--- TODO: END - Consider removing all security requirements as beyond the scope of the project
 
 -- property_types table
 CREATE TABLE property_types (
@@ -77,8 +52,7 @@ CREATE TABLE employees (
     email VARCHAR(50) NOT NULL,
     phone_number VARCHAR(20),
     address_id INT REFERENCES addresses(address_id),
-    role_id INT REFERENCES agent_roles(role_id),
-    office_id INT, 
+    office_id INT,
     employment_status VARCHAR(20) NOT NULL,
     sales_total NUMERIC(15, 2) DEFAULT 0.00,
     hire_date DATE,
@@ -204,6 +178,7 @@ CREATE TABLE events (
     host VARCHAR(50),
     client_attendance TEXT,
     duration INT,
+    cost NUMERIC(10, 4),
     location VARCHAR(100)
 );
 
@@ -227,36 +202,3 @@ CREATE TABLE payments (
     payment_method VARCHAR(20) CHECK (payment_method IN ('Credit Card', 'Bank Transfer', 'Cash', 'Check')),
     status VARCHAR(20) CHECK (status IN ('Pending', 'Completed', 'Failed'))
 );
-
--- TODO: BEGIN - Consider removing this table from final design
-    -- leases table
-    CREATE TABLE leases (
-        lease_id SERIAL PRIMARY KEY,
-        property_id INT REFERENCES properties(property_id),
-        client_id INT REFERENCES clients(client_id),
-        agent_id INT REFERENCES employees(employee_id),
-        lease_start_date DATE NOT NULL,
-        lease_end_date DATE NOT NULL,
-        monthly_rent NUMERIC(10, 4) NOT NULL,
-        deposit_amount NUMERIC(10, 4),
-        lease_status VARCHAR(20)
-    );
--- TODO: END - Consider removing this table from final design
-
--- TODO: BEGIN - Consider removing all security requirements as beyond the scope of the project
-    -- Setting up row-level security and policies for sensitive tables
-    ALTER TABLE offices ENABLE ROW LEVEL SECURITY;
-    CREATE POLICY office_access ON offices FOR SELECT USING (true);
-
-    ALTER TABLE employees ENABLE ROW LEVEL SECURITY;
-    CREATE POLICY employee_access ON employees FOR SELECT USING (true);
-
-    -- Granting table-level privileges
-    GRANT SELECT ON ALL TABLES IN SCHEMA public TO read_only;
-    GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO data_entry;
-    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO admin;
-
-    -- Ensuring only admin can modify user roles and row-level security policies
-    REVOKE ALL ON SCHEMA public FROM PUBLIC;
-    GRANT USAGE ON SCHEMA public TO read_only, data_entry, data_manager, admin;
--- TODO: END - Consider removing all security requirements as beyond the scope of the project
