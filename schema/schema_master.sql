@@ -1,35 +1,37 @@
--- Creating roles for different levels of database access
-CREATE ROLE read_only NOLOGIN;
-CREATE ROLE data_entry NOLOGIN;
-CREATE ROLE data_manager NOLOGIN;
-CREATE ROLE admin SUPERUSER;
+-- TODO: BEGIN - Consider removing all security requirements as beyond the scope of the project
+    -- Creating roles for different levels of database access
+    CREATE ROLE read_only NOLOGIN;
+    CREATE ROLE data_entry NOLOGIN;
+    CREATE ROLE data_manager NOLOGIN;
+    CREATE ROLE admin SUPERUSER;
 
--- Granting role usage
-GRANT read_only TO data_entry;
-GRANT data_entry TO data_manager;
-GRANT data_manager TO admin;
+    -- Granting role usage
+    GRANT read_only TO data_entry;
+    GRANT data_entry TO data_manager;
+    GRANT data_manager TO admin;
 
--- user_roles table
--- this is the table to determine what access should be granted based on roles
-CREATE TABLE user_roles (
-    role_id SERIAL PRIMARY KEY,
-    role_name VARCHAR(20) NOT NULL,
-    description TEXT NOT NULL,
-    access_level VARCHAR(20) NOT NULL,
-    creation_date DATE DEFAULT CURRENT_DATE,
-    is_active BOOLEAN DEFAULT TRUE,
-    CONSTRAINT chk_access_level CHECK (access_level IN ('read_only', 'data_entry', 'data_manager', 'admin')),
-    CONSTRAINT chk_role_name CHECK (role_name IN ('Manager', 'Intern', 'Executive', 'Supervisor'))
-);
+    -- user_roles table
+    -- this is the table to determine what access should be granted based on roles
+    CREATE TABLE user_roles (
+        role_id SERIAL PRIMARY KEY,
+        role_name VARCHAR(20) NOT NULL,
+        description TEXT NOT NULL,
+        access_level VARCHAR(20) NOT NULL,
+        creation_date DATE DEFAULT CURRENT_DATE,
+        is_active BOOLEAN DEFAULT TRUE,
+        CONSTRAINT chk_access_level CHECK (access_level IN ('read_only', 'data_entry', 'data_manager', 'admin')),
+        CONSTRAINT chk_role_name CHECK (role_name IN ('Manager', 'Intern', 'Executive', 'Supervisor'))
+    );
+-- TODO: END - Consider removing all security requirements as beyond the scope of the project
 
--- Property Types Table
+-- property_types table
 CREATE TABLE property_types (
     type_id SERIAL PRIMARY KEY,
     type_name VARCHAR(20) NOT NULL,
     CONSTRAINT chk_type_name CHECK (type_name IN ('Apartment', 'Townhouse', 'Condo', 'Villa', 'Studio'))
 );
 
--- Property Status Table
+-- property_status table
 CREATE TABLE property_status (
     status_id SERIAL PRIMARY KEY,
     status_name VARCHAR(20) NOT NULL,
@@ -37,7 +39,7 @@ CREATE TABLE property_status (
     CONSTRAINT chk_status_name CHECK (status_name IN ('Pending', 'Reserved', 'Sold', 'Listed', 'Unavailable'))
 );
 
--- Client Types Table
+-- client_types table
 CREATE TABLE client_types (
     client_type_id SERIAL PRIMARY KEY,
     type_name VARCHAR(20) NOT NULL,
@@ -45,21 +47,21 @@ CREATE TABLE client_types (
     CONSTRAINT chk_type_name CHECK (type_name IN ('Corporate', 'Individual', 'Non-Profit', 'Government', 'Small Business', 'VIP'))
 );
 
--- Event Types Table
+-- event_types table
 CREATE TABLE event_types (
     type_id SERIAL PRIMARY KEY,
     type_name VARCHAR(20) NOT NULL,
     CONSTRAINT chk_type_name CHECK (type_name IN ('Room Tour', 'Corporate Party', 'Networking Event', 'Open House'))
 );
 
--- Transaction Types Table
+-- transaction_types table
 CREATE TABLE transaction_types (
     type_id SERIAL PRIMARY KEY,
     type_name VARCHAR(20) NOT NULL,
     CONSTRAINT chk_type_name CHECK (type_name IN ('Deposit', 'Withdrawal', 'Transfer', 'Payment', 'Refund', 'Charge'))
 );
 
--- Addresses Table
+-- addresses table
 CREATE TABLE addresses (
     address_id SERIAL PRIMARY KEY,
     address VARCHAR(100) NOT NULL,
@@ -68,7 +70,7 @@ CREATE TABLE addresses (
     zipcode VARCHAR(15) NOT NULL
 );
 
--- employees Table
+-- employees table
 CREATE TABLE employees (
     employee_id SERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
@@ -216,7 +218,7 @@ CREATE TABLE property_sales_history (
     agent_id INT REFERENCES employees(employee_id)
 );
 
--- Payments Table
+-- payments table
 CREATE TABLE payments (
     payment_id SERIAL PRIMARY KEY,
     transaction_id INT REFERENCES transactions(transaction_id),
@@ -226,32 +228,35 @@ CREATE TABLE payments (
     status VARCHAR(20) CHECK (status IN ('Pending', 'Completed', 'Failed'))
 );
 
--- Leases Table
-CREATE TABLE leases (
-    lease_id SERIAL PRIMARY KEY,
-    property_id INT REFERENCES properties(property_id),
-    client_id INT REFERENCES clients(client_id),
-    agent_id INT REFERENCES employees(employee_id),
-    lease_start_date DATE NOT NULL,
-    lease_end_date DATE NOT NULL,
-    monthly_rent NUMERIC(10, 4) NOT NULL,
-    deposit_amount NUMERIC(10, 4),
-    lease_status VARCHAR(20)
-);
+-- TODO: BEGIN - Consider removing this table from final design
+    -- leases table
+    CREATE TABLE leases (
+        lease_id SERIAL PRIMARY KEY,
+        property_id INT REFERENCES properties(property_id),
+        client_id INT REFERENCES clients(client_id),
+        agent_id INT REFERENCES employees(employee_id),
+        lease_start_date DATE NOT NULL,
+        lease_end_date DATE NOT NULL,
+        monthly_rent NUMERIC(10, 4) NOT NULL,
+        deposit_amount NUMERIC(10, 4),
+        lease_status VARCHAR(20)
+    );
+-- TODO: END - Consider removing this table from final design
 
+-- TODO: BEGIN - Consider removing all security requirements as beyond the scope of the project
+    -- Setting up row-level security and policies for sensitive tables
+    ALTER TABLE offices ENABLE ROW LEVEL SECURITY;
+    CREATE POLICY office_access ON offices FOR SELECT USING (true);
 
--- Setting up row-level security and policies for sensitive tables
-ALTER TABLE offices ENABLE ROW LEVEL SECURITY;
-CREATE POLICY office_access ON offices FOR SELECT USING (true);
+    ALTER TABLE employees ENABLE ROW LEVEL SECURITY;
+    CREATE POLICY employee_access ON employees FOR SELECT USING (true);
 
-ALTER TABLE employees ENABLE ROW LEVEL SECURITY;
-CREATE POLICY employee_access ON employees FOR SELECT USING (true);
+    -- Granting table-level privileges
+    GRANT SELECT ON ALL TABLES IN SCHEMA public TO read_only;
+    GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO data_entry;
+    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO admin;
 
--- Granting table-level privileges
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO read_only;
-GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO data_entry;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO admin;
-
--- Ensuring only admin can modify user roles and row-level security policies
-REVOKE ALL ON SCHEMA public FROM PUBLIC;
-GRANT USAGE ON SCHEMA public TO read_only, data_entry, data_manager, admin;
+    -- Ensuring only admin can modify user roles and row-level security policies
+    REVOKE ALL ON SCHEMA public FROM PUBLIC;
+    GRANT USAGE ON SCHEMA public TO read_only, data_entry, data_manager, admin;
+-- TODO: END - Consider removing all security requirements as beyond the scope of the project
