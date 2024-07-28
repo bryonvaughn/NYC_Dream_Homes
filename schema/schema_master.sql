@@ -192,3 +192,44 @@ CREATE TABLE business_expenses (
 -- Indexes for Business Expenses
 CREATE INDEX idx_expense_date ON business_expenses(expense_date);
 CREATE INDEX idx_expense_type ON business_expenses(expense_type);
+
+-- Functions for calculated fields
+
+-- Running total_sales for employees associated with transactions
+CREATE OR REPLACE FUNCTION update_sales_total()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Update the sales_total for the affected employee
+    UPDATE employees e
+    SET sales_total = (
+        SELECT COALESCE(SUM(t.price), 0)
+        FROM transactions t
+        WHERE t.agent_id = e.employee_id
+    )
+    WHERE e.employee_id = NEW.agent_id OR e.employee_id = OLD.agent_id;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_sales_total_trigger
+AFTER INSERT OR UPDATE OR DELETE ON transactions
+FOR EACH ROW
+EXECUTE FUNCTION update_sales_total();
+
+-- Property is_active flag based on the status
+CREATE OR REPLACE FUNCTION set_is_active()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.status_name IN ('Listed', 'Reserved', 'Pending') THEN
+        NEW.is_active := TRUE;
+    ELSIF NEW.status_name IN ('Sold', 'Unavailable') THEN
+        NEW.is_active := FALSE;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER set_is_active_trigger
+BEFORE INSERT OR UPDATE ON property_status
+FOR EACH ROW
+EXECUTE FUNCTION set_is_active();

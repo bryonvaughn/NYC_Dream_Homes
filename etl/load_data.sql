@@ -67,8 +67,8 @@ JOIN employees e ON ap.person_id = e.person_id;
 -- PROPERTIES
 
 -- Insert unique addresses into the address table
-INSERT INTO addresses (address, city, state, zipcode)
-SELECT DISTINCT address, city, state, zipcode
+INSERT INTO addresses (address, city, state, zipcode, neighborhood)
+SELECT DISTINCT address, city, state, zipcode, neighborhood
 FROM tmp_properties;
 
 -- Insert property types into the property_types table
