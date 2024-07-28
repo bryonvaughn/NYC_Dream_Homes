@@ -18,7 +18,6 @@ CREATE TABLE property_status (
 CREATE TABLE client_types (
     client_type_id SERIAL PRIMARY KEY,
     type_name VARCHAR(20) NOT NULL,
-    type_description VARCHAR(200) NOT NULL,
     CONSTRAINT chk_type_name CHECK (type_name IN ('Corporate', 'Individual', 'Non-Profit', 'Government', 'Small Business', 'VIP'))
 );
 
@@ -26,14 +25,14 @@ CREATE TABLE client_types (
 CREATE TABLE event_types (
     type_id SERIAL PRIMARY KEY,
     type_name VARCHAR(20) NOT NULL,
-    CONSTRAINT chk_type_name CHECK (type_name IN ('Room Tour', 'Corporate Party', 'Networking Event', 'Open House'))
+    CONSTRAINT chk_type_name CHECK (type_name IN ('Personal Showing', 'Virtual Tour', 'Open House'))
 );
 
 -- transaction_types table
 CREATE TABLE transaction_types (
     type_id SERIAL PRIMARY KEY,
     type_name VARCHAR(20) NOT NULL,
-    CONSTRAINT chk_type_name CHECK (type_name IN ('Deposit', 'Withdrawal', 'Transfer', 'Payment', 'Refund', 'Charge'))
+    CONSTRAINT chk_type_name CHECK (type_name IN ('Purchase', 'Sale', 'Rent'))
 );
 
 -- addresses table
@@ -42,23 +41,48 @@ CREATE TABLE addresses (
     address VARCHAR(100) NOT NULL,
     city VARCHAR(50) NOT NULL,
     state VARCHAR(50) NOT NULL,
-    zipcode VARCHAR(15) NOT NULL
+    zipcode VARCHAR(15) NOT NULL,
+    neighborhood VARCHAR(30)
+);
+
+-- person table
+CREATE TABLE person (
+    person_id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    email VARCHAR(50) NOT NULL,
+    phone_number VARCHAR(30),
+    date_of_birth DATE,
+    address_id INT REFERENCES addresses(address_id)
+);
+
+-- offices table
+CREATE TABLE offices (
+    office_id SERIAL PRIMARY KEY,
+    office_name VARCHAR(100) NOT NULL,
+    address_id INT REFERENCES addresses(address_id),
+    phone_number VARCHAR(30),
+    email VARCHAR(100),
+    manager_id INT
 );
 
 -- employees table
 CREATE TABLE employees (
     employee_id SERIAL PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
-    email VARCHAR(50) NOT NULL,
-    phone_number VARCHAR(20),
-    address_id INT REFERENCES addresses(address_id),
-    office_id INT,
+    person_id INT REFERENCES person(person_id),
+    office_id INT REFERENCES offices(office_id),
     employment_status VARCHAR(20) NOT NULL,
     sales_total NUMERIC(15, 2) DEFAULT 0.00,
+    expense_budget NUMERIC(10, 2),
     hire_date DATE,
     termination_date DATE,
     CONSTRAINT chk_employment_status CHECK (employment_status IN ('Active', 'Inactive', 'On Leave', 'Terminated'))
 );
+
+-- Add foreign key constraint for manager_id in offices table
+ALTER TABLE offices
+ADD CONSTRAINT fk_manager_id
+FOREIGN KEY (manager_id)
+REFERENCES employees(employee_id);
 
 -- agents table
 -- this will be helpful to separate admin staff from agents that represent properties
@@ -68,16 +92,6 @@ CREATE TABLE agents (
     license_number VARCHAR(50) NOT NULL,
     specialties TEXT,
     rating NUMERIC(3, 2) DEFAULT 0.00
-);
-
--- offices table
-CREATE TABLE offices (
-    office_id SERIAL PRIMARY KEY,
-    office_name VARCHAR(100) NOT NULL,
-    address_id INT REFERENCES addresses(address_id),
-    phone_number VARCHAR(20),
-    email VARCHAR(100),
-    manager_id INT REFERENCES employees(employee_id)
 );
 
 -- properties table
@@ -94,52 +108,16 @@ CREATE TABLE properties (
     description TEXT,
     amenities TEXT,
     listing_date DATE,
-    listing_agent_id INT REFERENCES employees(employee_id)
-);
-
--- property_images table
--- this table will be used to manage all images of the property to be displayed
-CREATE TABLE property_images (
-    image_id SERIAL PRIMARY KEY,
-    property_id INT REFERENCES properties(property_id),
-    image_url VARCHAR(255) NOT NULL,
-    description TEXT,
-    uploaded_date DATE DEFAULT CURRENT_DATE
-);
-
--- property_visits table
--- this table will be used to track history of visits of potential clients
-CREATE TABLE property_visits (
-    visit_id SERIAL PRIMARY KEY,
-    property_id INT REFERENCES properties(property_id),
-    client_id INT REFERENCES clients(client_id),
-    visit_date DATE NOT NULL,
-    agent_id INT REFERENCES employees(employee_id),
-    feedback TEXT
+    agent_id INT REFERENCES agents(agent_id)
 );
 
 -- clients table
 CREATE TABLE clients (
     client_id SERIAL PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
-    email VARCHAR(50),
-    phone_number VARCHAR(20),
-    date_of_birth DATE,
+    person_id INT REFERENCES person(person_id),
     preferred_contact_method VARCHAR(20),
     notes TEXT,
-    address_id INT REFERENCES addresses(address_id),
     client_type_id INT REFERENCES client_types(client_type_id)
-);
-
--- property_reviews table
--- this table will be used to store reviews and ratings by clients for properties
-CREATE TABLE property_reviews (
-    review_id SERIAL PRIMARY KEY,
-    property_id INT REFERENCES properties(property_id),
-    client_id INT REFERENCES clients(client_id),
-    review_date DATE NOT NULL,
-    rating INT CHECK (rating >= 1 AND rating <= 5),
-    review_text TEXT
 );
 
 -- client_interactions table
@@ -162,7 +140,6 @@ CREATE TABLE transactions (
     transaction_type_id INT REFERENCES transaction_types(type_id),
     price NUMERIC(10, 4),
     commission NUMERIC(10, 4),
-    payment_status VARCHAR(20) CHECK (payment_status IN ('Pending', 'Completed', 'Failed')),
     contract_signed_date DATE,
     closing_date DATE
 );
@@ -171,34 +148,47 @@ CREATE TABLE transactions (
 CREATE TABLE events (
     event_id SERIAL PRIMARY KEY,
     type_id INT REFERENCES event_types(type_id),
-    date DATE NOT NULL,
     property_id INT REFERENCES properties(property_id),
     agent_id INT REFERENCES employees(employee_id),
-    participant_number INT,
-    host VARCHAR(50),
-    client_attendance TEXT,
-    duration INT,
-    cost NUMERIC(10, 4),
-    location VARCHAR(100)
+    client_id INT REFERENCES clients(client_id),
+    date DATE NOT NULL,
+    client_attended BOOLEAN,
+    duration INT
 );
 
--- property_sales_history table
-CREATE TABLE property_sales_history (
-    sale_id SERIAL PRIMARY KEY,
+-- property_reviews table
+-- this table will be used to store reviews and ratings by clients for properties
+CREATE TABLE property_reviews (
+    review_id SERIAL PRIMARY KEY,
     property_id INT REFERENCES properties(property_id),
-    sale_date DATE NOT NULL,
-    price NUMERIC(10, 4),
-    buyer_id INT REFERENCES clients(client_id),
-    seller_id INT REFERENCES clients(client_id),
-    agent_id INT REFERENCES employees(employee_id)
+    client_id INT REFERENCES clients(client_id),
+    review_date DATE NOT NULL,
+    rating INT CHECK (rating >= 1 AND rating <= 5),
+    review_text TEXT
 );
 
--- payments table
-CREATE TABLE payments (
-    payment_id SERIAL PRIMARY KEY,
-    transaction_id INT REFERENCES transactions(transaction_id),
-    payment_date DATE NOT NULL,
-    amount NUMERIC(10, 4) NOT NULL,
-    payment_method VARCHAR(20) CHECK (payment_method IN ('Credit Card', 'Bank Transfer', 'Cash', 'Check')),
-    status VARCHAR(20) CHECK (status IN ('Pending', 'Completed', 'Failed'))
+-- property_images table
+-- this table will be used to manage all images of the property to be displayed
+CREATE TABLE property_images (
+    image_id SERIAL PRIMARY KEY,
+    property_id INT REFERENCES properties(property_id),
+    image_url VARCHAR(255) NOT NULL,
+    description TEXT,
+    uploaded_date DATE DEFAULT CURRENT_DATE
 );
+
+-- business_expenses Table
+CREATE TABLE business_expenses (
+    expense_id SERIAL PRIMARY KEY,
+    office_id INT REFERENCES offices(office_id),
+    expense_date DATE NOT NULL,
+    expense_type VARCHAR(50) NOT NULL,
+    amount NUMERIC(10, 2) NOT NULL,
+    description TEXT,
+    approved_by INT REFERENCES employees(employee_id),
+    CONSTRAINT chk_expense_type CHECK (expense_type IN ('Office Supplies', 'Utilities', 'Rent', 'Marketing', 'Travel', 'Maintenance', 'Technology', 'Training', 'Event', 'Miscellaneous'))
+);
+
+-- Indexes for Business Expenses
+CREATE INDEX idx_expense_date ON business_expenses(expense_date);
+CREATE INDEX idx_expense_type ON business_expenses(expense_type);
