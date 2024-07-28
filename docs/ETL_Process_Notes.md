@@ -39,4 +39,3 @@ Despite the plan to use SQL as much as possible, using Python for the actual gen
 Each of the denormalized CSV files was created with enough details of any related tables to allow for a lookup to determine the proper foreign key to use when inserting the data to the schema. When loading the tables, we used temporary tables created from the CSV exports in the earlier phase of the project. Those tables were then queried to pull the data to be inserted, and joined on related tables to get proper keys to allow insertion.
 
 All of the data was loaded to the schema from these temporary tables, and some final checks on expected record counts were added to the import script to validate the process. Should more data be required, the python scripts can be easily updated to draw more records for any given table.
-
