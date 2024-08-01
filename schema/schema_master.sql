@@ -99,7 +99,7 @@ CREATE TABLE properties (
     property_id SERIAL PRIMARY KEY,
     address_id INT REFERENCES addresses(address_id),
     type_id INT REFERENCES property_types(type_id),
-    price NUMERIC(10, 4) NOT NULL,
+    price NUMERIC(12, 2) NOT NULL,
     status_id INT REFERENCES property_status(status_id),
     square_feet INT,
     number_of_bedrooms INT,
@@ -138,8 +138,8 @@ CREATE TABLE transactions (
     agent_id INT REFERENCES employees(employee_id),
     date DATE NOT NULL,
     transaction_type_id INT REFERENCES transaction_types(type_id),
-    price NUMERIC(10, 4),
-    commission NUMERIC(10, 4),
+    price NUMERIC(14, 2),
+    commission NUMERIC(14, 2),
     contract_signed_date DATE,
     closing_date DATE
 );

@@ -1,4 +1,4 @@
--- Active: 1722382953154@@127.0.0.1@5432@nyc_dream_homes
+-- Active: 1722201456406@@127.0.0.1@5432@nyc_dream_homes
 SELECT
     a.neighborhood,
     COUNT(p.property_id) AS total_active_properties
